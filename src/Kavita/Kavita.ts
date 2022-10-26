@@ -32,7 +32,7 @@ import {
     getKavitaAPI,
     getOptions,
     getServerUnavailableMangaTiles,
-    searchRequest,
+    searchRequest
 } from './Common'
 
 // This source use Kavita REST API
@@ -401,7 +401,7 @@ export class Kavita extends Source {
                     params = '?sort=readProgress.readDate,desc&read_status=IN_PROGRESS&page=0&size=20&deleted=false';
                     idProp = 'seriesId';
                     break;
-                    */
+                    
                 case 'recently-added':
                     apiPath = `${kavitaAPI}/Series/recently-added/`
                     thumbPath = `${kavitaAPI}/Image`
@@ -414,6 +414,7 @@ export class Kavita extends Source {
                     params = '?libraryId=0'
                     idProp = 'seriesId'
                     break
+                    */
                 default:
                     apiPath = `${kavitaAPI}/Series/${section.id}`
                     thumbPath = `${kavitaAPI}/Image`
@@ -436,7 +437,7 @@ export class Kavita extends Source {
 
                     const tiles = []
 
-                    for (const serie of result.content) {
+                    for (const serie of result) {
                         tiles.push(
                             createMangaTile({
                                 id: serie[idProp],

@@ -27,7 +27,7 @@ export async function searchRequest(
 ): Promise<PagedResults> {
     // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
 
-    // We won't use `await this.getKavitaAPI()` as we do not want to throw an error
+    // We won't use `await this.getKomgaAPI()` as we do not want to throw an error
     const kavitaAPI = await getKavitaAPI(stateManager)
 
     if (kavitaAPI === null) {
@@ -68,7 +68,7 @@ export async function searchRequest(
     }
 
     const request = createRequestObject({
-        url: `${kavitaAPI}/Series`,
+        url: `${kavitaAPI}/series`,
         method: 'GET',
         param: paramsString,
     })
@@ -111,10 +111,9 @@ export async function searchRequest(
 // KAVITA API STATE METHODS
 //
 
-const DEFAULT_KAVITA_SERVER_ADDRESS = 'https://my.kavita.address'
+const DEFAULT_KAVITA_SERVER_ADDRESS = 'http://192.168.1.35:4200'
 const DEFAULT_KAVITA_API = '/api/'
-const DEFAULT_KAVITA_USERNAME = 'username'
-const DEFAULT_KAVITA_PASSWORD = 'password'
+const DEFAULT_KAVITA_APIKEY = 'Admin'
 const DEFAULT_SHOW_ON_DECK = true
 
 export async function getAuthorizationString(stateManager: SourceStateManager): Promise<string> {
@@ -122,7 +121,7 @@ export async function getAuthorizationString(stateManager: SourceStateManager): 
 }
 
 export async function getKavitaAPI(stateManager: SourceStateManager): Promise<string> {
-    return (await stateManager.retrieve('serverAddress') as string) ?? DEFAULT_KAVITA_SERVER_ADDRESS + DEFAULT_KAVITA_API
+    return (await stateManager.retrieve('kavitaAPI') as string | undefined) ?? DEFAULT_KAVITA_API
 }
 
 export async function getOptions(stateManager: SourceStateManager): Promise<{ showOnDeck: boolean }> {
@@ -136,11 +135,10 @@ export async function retrieveStateData(stateManager: SourceStateManager) {
     // Used to show already saved data in settings
 
     const serverURL = (await stateManager.retrieve('serverAddress') as string) ?? DEFAULT_KAVITA_SERVER_ADDRESS
-    const serverUsername = (await stateManager.keychain.retrieve('serverUsername') as string) ?? DEFAULT_KAVITA_USERNAME
-    const serverPassword = (await stateManager.keychain.retrieve('serverPassword') as string) ?? DEFAULT_KAVITA_PASSWORD
+    const serverAPIkey = (await stateManager.keychain.retrieve('serverAPIkey') as string) ?? DEFAULT_KAVITA_APIKEY
     const showOnDeck = (await stateManager.retrieve('showOnDeck') as boolean) ?? DEFAULT_SHOW_ON_DECK
 
-    return { serverURL, serverUsername, serverPassword, showOnDeck }
+    return { serverURL, serverAPIkey, showOnDeck }
 }
 
 export async function setStateData(stateManager: SourceStateManager, data: Record<string, any>) {
@@ -150,8 +148,7 @@ export async function setStateData(stateManager: SourceStateManager, data: Recor
     )
     await setCredentials(
         stateManager,
-        data['serverUsername'] ?? DEFAULT_KAVITA_USERNAME,
-        data['serverPassword'] ?? DEFAULT_KAVITA_PASSWORD
+        data['serverAPIkey'] ?? DEFAULT_KAVITA_APIKEY,
     )
     await setOptions(
         stateManager,
@@ -164,18 +161,28 @@ async function setKavitaServerAddress(stateManager: SourceStateManager, apiUri: 
     await stateManager.store('kavitaAPI', createKavitaAPI(apiUri))
 }
 
-async function setCredentials(stateManager: SourceStateManager, username: string, password: string) {
-    await stateManager.keychain.store('serverUsername', username)
-    await stateManager.keychain.store('serverPassword', password)
-    await stateManager.keychain.store('authorization', createAuthorizationString(username, password))
+async function setCredentials(stateManager: SourceStateManager, apikey: string) 
+{
+    await stateManager.keychain.store('apikey', apikey)
+    await stateManager.keychain.store('authorization', createAuthorizationString(stateManager, apikey))
 }
 
 async function setOptions(stateManager: SourceStateManager, showOnDeck: boolean ) {
     await stateManager.store('showOnDeck', showOnDeck)
 }
 
-function createAuthorizationString(username: string, password: string): string {
-    return 'Basic ' + Buffer.from(username + ':' + password, 'binary').toString('base64')
+function createAuthorizationString(stateManager: SourceStateManager, apikey: string) {
+    
+    const kavitaAPI = stateManager.retrieve('kavitaAPI')
+
+    const request = createRequestObject({
+        url: `${kavitaAPI}/Plugin/authenticate`,
+        method: 'POST',
+        param: '?apiKey='+apikey,
+        incognito: true, // We don't want the authorization to be cached
+    })
+    const data = JSON.parse(request.toString())
+    return 'Bearer ' + data.token
 }
 
 function createKavitaAPI(serverAddress: string): string {

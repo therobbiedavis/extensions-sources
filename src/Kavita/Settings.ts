@@ -30,11 +30,12 @@ export const testServerSettings = async (
     // To test these information, we try to make a connection to the server
     // We could use a better endpoint to test the connection
     const request = createRequestObject({
-        url: `${kavitaAPI}/libraries/`,
+        url: `${kavitaAPI}/api/Library`,
         method: 'GET',
         incognito: true, // We don't want the authorization to be cached
         headers: { authorization: authorization },
     })
+
 
     let responseStatus = undefined
 
@@ -92,26 +93,16 @@ export const serverSettingsMenu = (
                         createInputField({
                             id: 'serverAddress',
                             label: 'Server URL',
-                            placeholder: 'http://127.0.0.1:8080',
+                            placeholder: 'http://127.0.0.1:5000',
                             value: values.serverURL,
                             maskInput: false,
                         }),
                         createInputField({
-                            id: 'serverUsername',
-                            label: 'Username',
-                            placeholder: 'demo',
-                            value: values.serverUsername,
+                            id: 'serverAPIkey',
+                            label: 'API Key',
+                            placeholder: 'example',
+                            value: values.serverAPIkey,
                             maskInput: false,
-                        }),
-                        // TS-Ignoring because this isnt documented yet
-                        // Fallback to default input field if the app version doesnt support
-                        // SecureInputField
-                        // @ts-ignore
-                        (typeof createSecureInputField == 'undefined' ? createInputField : createSecureInputField)({
-                            id: 'serverPassword',
-                            label: 'Password',
-                            placeholder: 'Some Super Secret Password',
-                            value: values.serverPassword
                         }),
                     ]),
                 }),
@@ -181,4 +172,4 @@ export const resetSettingsButton = (
         value: '',
         onTap: () => setStateData(stateManager, {}),
     })
-};
+}
